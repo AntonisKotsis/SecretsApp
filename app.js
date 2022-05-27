@@ -16,12 +16,14 @@ app.use(bodyParser.urlencoded({
 mongoose.connect("mongodb://localhost:27017/userDB",{useNewUrlParser:true})
 
 //Creating the schema for the User
-const userSchema={
+const userSchema=new mongoose.Schema({
   email:String,
   password:String
-}
-
-
+});
+//This is the string to use for encrytion
+const secret="Thisismylittlesecret";
+//following we encrypt only the password field of the user using secret string we created above
+userSchema.plugin(encrypt,{secret: secret,encryptedFields:["password"]});
 
 //Creating the model for the User
 const User=new mongoose.model("User",userSchema);
