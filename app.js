@@ -6,8 +6,9 @@ const ejs =require("ejs");
 const mongoose=require("mongoose");
 const encrypt=require("mongoose-encryption");
 const md5=require("md5");
+const bcrypt=require("bcrypt");
 const app=express();
-
+const saltRound=3;
 app.use(express.static("public") );
 app.set("view engine","ejs");
 app.use(bodyParser.urlencoded({
@@ -41,20 +42,23 @@ app.get("/register",function(req,res){
 
 //Render sign up page
 app.post("/register",function(req,res){
-  //Create a new user
-  const newUser=new User({
-    email:req.body.username,
-    password:md5(req.body.password)
+  bcrypt.hash(req.body.password,saltRound,function(err,hash){
+    const newUser=new User({
+      email:req.body.username,
+      password:hash
+    });
+    newUser.save(function(err){
+      if(err){
+        console.log(err);
+        //if we manage to save the user the render the Secrets page that is only avalaible to the registered users
+      }else{
+        res.render("secrets")
+      }
+    })
   });
+  //Create a new user
+
   //Try to save the user in the DB
-  newUser.save(function(err){
-    if(err){
-      console.log(err);
-    //if we manage to save the user the render the Secrets page that is only avalaible to the registered users
-    }else{
-      res.render("secrets")
-    }
-  })
 });
 
 //Render login page
@@ -71,10 +75,13 @@ app.post("/login",function(req,res){
     else{
       //if we find the username in our DB then we check if the password that has been given is correct
       if(foundUser){
-        if(foundUser.password===password){
-          //and if it matches then render the secrets page cause the user has logged in
-          res.render("secrets");
-        }
+        bcrypt.compare(password,foundUser.password,function(err,result){
+          if(result===true){
+            //and if it matches then render the secrets page cause the user has logged in
+            res.render("secrets");
+          }
+        });
+
       }
     }
   })
